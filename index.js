@@ -8,6 +8,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 let data = [];
 
+function loadData() {
+  try {
+    const jsonData = fs.readFileSync('data.json');
+    data = JSON.parse(jsonData);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+loadData();
+
 fs.readFile('data.json', (err, jsonData) => {
   if (err) {
     console.error(err);
@@ -21,7 +32,7 @@ fs.readFile('data.json', (err, jsonData) => {
 });
 
 app.get('/add', (req, res) => {
-  const num = Number(req.query.num);
+  var num = eval(req.query.num);
   const text = req.query.text;
   const user = req.query.user;
   const userId = Number(req.query.userid);
@@ -38,12 +49,13 @@ app.get('/add', (req, res) => {
   const date = moment().tz('America/Chicago').format('YYYY-MM-DDTHH:mm:ss.SSSZ');
   data.push({ id, num, text, user, userId, userLevel, date, streamTime });
   saveData();
-  res.send(`Added row: { id: ${id}, num: ${num}, text: "${text}", user: "${user}", userId: ${userId}, userLevel: "${userLevel}", date: "${date}", streamTime: "${streamTime}" }`);
+  const sum = data.reduce((acc, row) => acc + row.num, 0);
+  res.send(`Added number: ${num}, comment: "${text}". Current total: ${sum}`);
 });
 
 app.get('/sum', (req, res) => {
   const sum = data.reduce((acc, row) => acc + row.num, 0);
-  res.send(`The sum is: ${sum}`);
+  res.send(`Current total: ${sum}`);
 });
 
 app.get('/data', (req, res) => {
