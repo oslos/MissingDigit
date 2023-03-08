@@ -64,7 +64,7 @@ app.get('/add', (req, res) => {
 app.get('/sum', (req, res) => {
   const channel = req.query.channel || 'default'; // default channel if not already specified
   const sum = data.filter((row) => row.channel === channel).reduce((acc, row) => acc + row.num, 0);
-  res.send(`Current total for channel ${channel}: ${sum}`);
+  res.send(`Current total: ${sum}`);
 });
 
 app.get('/data', (req, res) => {
