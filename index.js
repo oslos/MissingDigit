@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const moment = require('moment-timezone');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -72,6 +73,42 @@ app.get('/data', (req, res) => {
   res.send(filteredData);
 });
 
+app.get('/datacsv', (req, res) => {
+  const channel = req.query.channel || 'default'; // default channel if not already specified
+  const filteredData = data.filter((row) => row.channel === channel);
+  const rows = [];
+  const header = Object.keys(filteredData[0]);
+  
+  filteredData.forEach((obj) => {
+    const values = Object.values(obj);
+    const row = values.join(",");
+    rows.push(row);
+  });
+  
+  let csv = header.join(",") + "\n";
+  csv += rows.join("\n");
+
+  const filename = `${uuidv4()}.csv`;
+
+  // Write CSV to file
+  fs.writeFile(filename, csv, (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error writing file');
+    }
+
+    // Return file as response
+    res.download(filename, (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Error sending file');
+      }
+
+      // Delete file after response sent
+      fs.unlinkSync(filename);
+    });
+  });
+});
 
 app.get('/undo', (req, res) => {
   const userId = Number(req.query.userid);
@@ -91,7 +128,7 @@ app.get('/undo', (req, res) => {
   const lastRowToDelete = rowsToDelete[rowsToDelete.length - 1];
   data = data.filter((row) => row !== lastRowToDelete);
   saveData();
-  res.send(`Deleted row: { id: ${lastRowToDelete.id}, num: ${lastRowToDelete.num}, text: "${lastRowToDelete.text}", user: "${lastRowToDelete.user}", userId: ${lastRowToDelete.userId}, userLevel: "${lastRowToDelete.userLevel}", date: "${lastRowToDelete.date}", streamTime: "${lastRowToDelete.streamTime}" }`);
+  res.send(`Deleted row: id: ${lastRowToDelete.id}, num: ${lastRowToDelete.num}, text: "${lastRowToDelete.text}", user: "${lastRowToDelete.user}", date: "${lastRowToDelete.date}", streamTime: "${lastRowToDelete.streamTime}" }`);
 });
 
 function saveData() {
