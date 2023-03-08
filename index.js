@@ -54,7 +54,8 @@ app.get('/add', (req, res) => {
   const date = moment().tz('America/Chicago').format('YYYY-MM-DDTHH:mm:ss.SSSZ');
   data.push({ id, num, text, user, userId, userLevel, date, streamTime, channel });
   saveData();
-  const sum = data.reduce((acc, row) => acc + row.num, 0);
+  const filteredData = data.filter((row) => row.channel === channel);
+  const sum = filteredData.reduce((acc, row) => acc + row.num, 0);
   res.send(`Added number: ${num}, comment: "${text}". Current total: ${sum}`);
 });
 
