@@ -12,10 +12,14 @@ function loadData() {
   try {
     const jsonData = fs.readFileSync('data.json');
     data = JSON.parse(jsonData);
+    data.forEach((row) => {
+      row.channel = row.channel || 'default'; // default channel if not already specified
+    });
   } catch (err) {
     console.error(err);
   }
 }
+
 
 loadData();
 
@@ -38,6 +42,7 @@ app.get('/add', (req, res) => {
   const userId = Number(req.query.userid);
   const userLevel = req.query.userLevel;
   const streamTime = req.query.streamtime;
+  const channel = req.query.channel || 'default'; // default channel if not already specified
 
   if (!['moderator', 'owner'].includes(userLevel.toLowerCase())) {
     return res.status(401).send('Unauthorized');
@@ -47,29 +52,36 @@ app.get('/add', (req, res) => {
   const id = (lastRow ? lastRow.id + 1 : 1);
 
   const date = moment().tz('America/Chicago').format('YYYY-MM-DDTHH:mm:ss.SSSZ');
-  data.push({ id, num, text, user, userId, userLevel, date, streamTime });
+  data.push({ id, num, text, user, userId, userLevel, date, streamTime, channel });
   saveData();
   const sum = data.reduce((acc, row) => acc + row.num, 0);
   res.send(`Added number: ${num}, comment: "${text}". Current total: ${sum}`);
 });
 
+
 app.get('/sum', (req, res) => {
-  const sum = data.reduce((acc, row) => acc + row.num, 0);
-  res.send(`Current total: ${sum}`);
+  const channel = req.query.channel || 'default'; // default channel if not already specified
+  const sum = data.filter((row) => row.channel === channel).reduce((acc, row) => acc + row.num, 0);
+  res.send(`Current total for channel ${channel}: ${sum}`);
 });
 
 app.get('/data', (req, res) => {
-  res.send(data);
+  const channel = req.query.channel || 'default'; // default channel if not already specified
+  const filteredData = data.filter((row) => row.channel === channel);
+  res.send(filteredData);
 });
+
 
 app.get('/undo', (req, res) => {
   const userId = Number(req.query.userid);
+  const channel = req.query.channel || 'default'; // default channel if not already specified
 
   if (userId === undefined) {
     return res.status(400).send('Missing userid parameter');
   }
 
-  const rowsToDelete = data.filter((row) => row.userId === userId);
+  const rowsToDelete = data.filter((row) => row.userId === userId && row.channel === channel);
+
 
   if (rowsToDelete.length === 0) {
     return res.status(404).send('No rows found for given userid');
